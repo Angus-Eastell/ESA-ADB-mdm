@@ -55,10 +55,15 @@ class AlgorithmArgs(argparse.Namespace):
         dataset, data_columns, anomaly_columns = self._read_dataset()
 
         self._select_input_and_target_channels(data_columns)
-        target_anomaly_cols = [f"is_anomaly_{ch}" for ch in self.customParameters.target_channels]
 
-        dataset = self._unravel_global_annotation(dataset, anomaly_columns, target_anomaly_cols)
-        all_used_anomaly_columns = [col for col in target_anomaly_cols if col in dataset.columns]
+        all_used_channels = list(dict.fromkeys(self.customParameters.input_channels + self.customParameters.target_channels))
+        all_used_anomaly_columns = [f"is_anomaly_{ch}" for ch in all_used_channels]
+
+        dataset = self._unravel_global_annotation(dataset, anomaly_columns, all_used_anomaly_columns)
+        dataset = dataset.loc[:, all_used_channels + all_used_anomaly_columns]
+
+        data_columns = dataset.columns.tolist()[:len(all_used_channels)]
+
         self._map_channels_to_indices(data_columns)
 
         if self.executionType == "train":
@@ -96,12 +101,13 @@ class AlgorithmArgs(argparse.Namespace):
 
     def _select_input_and_target_channels(self, data_columns):
         self.customParameters.input_channels = self.get_valid_channels(
-            self.customParameters.input_channels, data_columns
+            self.customParameters.input_channels, data_columns, sort=True
         )
         self.customParameters.target_channels = self.get_valid_channels(
-            self.customParameters.target_channels, data_columns
+            self.customParameters.target_channels, data_columns, sort=True
         )
 
+    @staticmethod
     def _unravel_global_annotation(dataset: pd.DataFrame, original_anomaly_cols: list[str],
                                    target_channel_anomaly_cols: list[str]) -> pd.DataFrame:
         if len(original_anomaly_cols) == 1 and original_anomaly_cols[0] == "is_anomaly":  # Handle datasets with only one global is_anomaly column
