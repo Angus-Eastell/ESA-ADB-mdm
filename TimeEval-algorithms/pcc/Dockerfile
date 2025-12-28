@@ -1,4 +1,4 @@
-FROM registry.gitlab.hpi.de/akita/i/pyod-1.1.2
+FROM registry.gitlab.hpi.de/akita/i/python3-base
 
 LABEL maintainer="sebastian.schmidl@hpi.de"
 
