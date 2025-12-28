@@ -2,11 +2,20 @@ FROM python:3.7.9-slim-buster
 
 LABEL maintainer="sebastian.schmidl@hpi.de"
 
-RUN set -eux; \
-    apt-get update; \
-    apt-get upgrade -y; \
-    apt-get clean; \
+# added
+RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list && \
+    sed -i '/security.debian.org/d' /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get upgrade -y && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# old
+#RUN set -eux; \
+#    apt-get update; \
+#    apt-get upgrade -y; \
+#    apt-get clean; \
+#    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 VOLUME ["/data", "/results"]
 
