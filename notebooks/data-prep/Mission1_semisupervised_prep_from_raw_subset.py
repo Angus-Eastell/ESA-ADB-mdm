@@ -13,6 +13,8 @@ from timeeval import DatasetManager, Datasets
 from timeeval.datasets import DatasetAnalyzer, DatasetRecord, AnomalyLength
 from utils import AnnotationLabel, encode_telecommands, find_full_time_range
 
+# to remove telecommands folder
+import shutil
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -33,7 +35,10 @@ test_data_split = "2007-01-01"
 data_raw_folder = parse_args().input_path
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
-data_processed_folder = os.path.abspath(os.path.join(current_dir, "../../data/preprocessed"))
+data_processed_folder = os.path.abspath(os.path.join(current_dir, "../../data/preprocessed_subset"))
+
+# added: makes preprosses_subset folder
+os.makedirs(data_processed_folder, exist_ok=True)
 
 dataset_collection_name = os.path.basename(data_raw_folder)
 source_folder = Path(data_raw_folder)
@@ -55,21 +60,58 @@ target_subfolder.mkdir(parents=True, exist_ok=True)
 print(f"Created directories {target_subfolder}")
 
 
+def remove_unneeded_data(source_folder):
+
+    # added
+    subset_channels = ['channel_41', 'channel_42', 'channel_43', 'channel_44', 'channel_45', 'channel_46']
+
+    # editied
+    all_labels_df = pd.read_csv(os.path.join(source_folder, "labels.csv"), parse_dates=["StartTime", "EndTime"], date_parser=lambda x: parse_date(x, ignoretz=True))
+
+    subset_labels_df = (all_labels_df[all_labels_df['Channel'].isin(subset_channels)].reset_index(drop=True))
+
+    # rewrite the labels.csv 
+    subset_labels_df.to_csv(os.path.join(source_folder, "labels.csv"), index = False)
+
+    all_anomaly_types_df = pd.read_csv(os.path.join(source_folder, "anomaly_types.csv"))
+
+    subset_unique_anomaly_ids = subset_labels_df['ID'].unique()
+
+    subset_anomaly_types_df = (all_anomaly_types_df[all_anomaly_types_df['ID'].isin(subset_unique_anomaly_ids)]).reset_index(drop=True)
+
+    # remove telecommands folder and csv
+    telecommands_csv_path = os.path.join(os.path.join(source_folder, "telecommands.csv"))
+
+    if os.path.exists(telecommands_csv_path):
+        os.remove(telecommands_csv_path)
+
+    telecommands_folder_path = os.path.join(os.path.join(source_folder, "telecommands"))
+
+    if os.path.exists(telecommands_folder_path):
+        shutil.rmtree(telecommands_folder_path)
+
+    # remove channels not in subset
+    channels_folder_path = os.path.join(os.path.join(source_folder, "channels"))
+
+    if os.path.exists(channels_folder_path):
+        for file in os.listdir(channels_folder_path):
+            channel_name = file[:-4]  # remove .zip extension
+            if channel_name not in subset_channels:
+                file_path = os.path.join(channels_folder_path, file)
+                os.remove(file_path)
+
+
 def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resampling_rule=pd.Timedelta(seconds=30)):
 
     labels_df = pd.read_csv(os.path.join(source_folder, "labels.csv"), parse_dates=["StartTime", "EndTime"], date_parser=lambda x: parse_date(x, ignoretz=True))
+
     anomaly_types_df = pd.read_csv(os.path.join(source_folder, "anomaly_types.csv"))
-    #telecommands_df = pd.read_csv(os.path.join(source_folder, "telecommands.csv"))
-    #telecommands_min_priority = 3
 
     extension = ".zip"
     all_parameter_names = sorted([
         os.path.basename(file)[: -len(extension)]
         for file in glob(os.path.join(source_folder, "channels", f"*{extension}"))
     ])
-
-    #telecommands_df = telecommands_df.loc[telecommands_df["Priority"] >= telecommands_min_priority]
-    #all_telecommands_names = sorted(telecommands_df.Telecommand.to_list())
 
     is_anomaly_columns = [f"is_anomaly_{param}" for param in all_parameter_names]
     train_test_paths = {"train": None, "test": None}
@@ -243,6 +285,8 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
     ))
     print(f"... processed source dataset: {dataset_name}")
 
+# added
+remove_unneeded_data(source_folder)
 
 dm = DatasetManager(target_folder, create_if_missing=True)
 for name, split in dataset_splits.items():
