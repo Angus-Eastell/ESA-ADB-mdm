@@ -31,6 +31,7 @@ dataset_splits = {"3_months": "2000-04-01",
                   "21_months": "2001-10-01",
                   "42_months": "2003-07-01",
                   "84_months": "2007-01-01"}
+
 test_data_split = "2007-01-01"
 data_raw_folder = parse_args().input_path
 
@@ -79,6 +80,9 @@ def remove_unneeded_data(source_folder):
 
     subset_anomaly_types_df = (all_anomaly_types_df[all_anomaly_types_df['ID'].isin(subset_unique_anomaly_ids)]).reset_index(drop=True)
 
+    # rewrite the anomaly_types.csv
+    subset_anomaly_types_df.to_csv(os.path.join(source_folder, "anomaly_types.csv"), index = False)
+
     # remove telecommands folder and csv
     telecommands_csv_path = os.path.join(os.path.join(source_folder, "telecommands.csv"))
 
@@ -116,7 +120,6 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
     is_anomaly_columns = [f"is_anomaly_{param}" for param in all_parameter_names]
     train_test_paths = {"train": None, "test": None}
 
-    target_meta_filepath = target_subfolder / f"{dataset_name}.{Datasets.METADATA_FILENAME_SUFFIX}"
 
     for train_test_type in train_test_paths.keys():
         if train_test_type == "test":
@@ -127,6 +130,8 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
         processed_filename = f"{train_test_name}.{train_test_type}.csv"
         train_test_paths[train_test_type] = str(dataset_subfolder / processed_filename).replace(os.sep, '/')
         target_filepath = target_subfolder / processed_filename
+
+        target_meta_filepath = target_subfolder / f"{train_test_name}.{Datasets.METADATA_FILENAME_SUFFIX}"
 
         # Prepare datasets
         if not target_filepath.exists() or not target_meta_filepath.exists():
