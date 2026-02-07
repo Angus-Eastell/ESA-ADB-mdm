@@ -1,4 +1,20 @@
-<h1>ESA Anomaly Detection Benchmark</h1>
+<h1>MDM3 Indra Deimos: Anomaly Detection in Satellite Telemtary</h1>
+
+Central Git for the Indra Deimos anomaly detection in satellite telemetrary project. From here you can efficiently preprocesses the ESA-ADB dataset into the subset channels used in the report and navigate to the individual git repositors that contain the models tested in the project. Unfortunately, because of the universities restriction on installing WSL or docker onto lab PC's, we were unable to integrate our models into the full TimeEval-based ESA benchmark. However, all models are evaluated using the same preprocessing and evaluation pipeline to ensure comparibility between model performance.
+
+### - [LFTSAD](https://github.com/bm7273/LFTSAD_ESA_ADB)
+
+### Matrix Profiling:
+
+### - [Anomaly Transformer](https://github.com/Angus-Eastell/Anomaly-Transformer-ESA-ADB)
+
+
+
+
+## Dataset preprocessing:
+
+
+<h2>ESA Anomaly Detection Benchmark</h2>
 
 The European Space Agency Anomaly Detection Benchmark (ESA-ADB) consists of three main components (visualised in the figure below for easier comprehension):
 1.	Large-scale, curated, structured, ML-ready ESA Anomalies Dataset (ESA-AD, in short) of real-life satellite telemetry collected from three ESA missions (out of which two are selected for benchmarking in ESA-ADB), manually annotated by spacecraft operations engineers (SOEs) and ML experts, and cross-verified using state-of-the-art algorithms. It can be downloaded from here: https://doi.org/10.5281/zenodo.12528696
