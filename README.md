@@ -6,7 +6,7 @@ Central Git for the Indra Deimos anomaly detection in satellite telemetrary proj
 
 ### - [LFTSAD](https://github.com/bm7273/LFTSAD_ESA_ADB)
 
-### [Matrix Profiling](https://github.com/RHMaso2/matrix_profile_esa_dataset/tree/main)
+### - [Matrix Profiling](https://github.com/RHMaso2/matrix_profile_esa_dataset/tree/main)
 
 ### - [Anomaly Transformer](https://github.com/Angus-Eastell/Anomaly-Transformer-ESA-ADB)
 
