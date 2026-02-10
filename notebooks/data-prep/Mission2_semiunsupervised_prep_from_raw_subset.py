@@ -13,7 +13,6 @@ from timeeval import DatasetManager, Datasets
 from timeeval.datasets import DatasetAnalyzer, DatasetRecord, AnomalyLength
 from utils import AnnotationLabel, encode_telecommands, find_full_time_range
 
-# to remove telecommands folder
 import shutil
 
 def parse_args():
@@ -21,25 +20,20 @@ def parse_args():
     parser.add_argument(
         "input_path",
         type=str,
-        help="Path to a folder with ESA Mission1 dataset.",
+        help="Path to a folder with ESA Mission2 dataset.",
     )
     return parser.parse_args()
 
 
-dataset_splits = {"3_months": "2000-04-01",
+dataset_splits = {"1_months": "2000-02-01",
+                  "5_months": "2000-06-01",
                   "10_months": "2000-11-01",
-                  "21_months": "2001-10-01",
-                  "42_months": "2003-07-01",
-                  "84_months": "2007-01-01"}
-
-test_data_split = "2007-01-01"
+                  "21_months": "2001-10-01"}
+test_data_split = "2001-10-01"
 data_raw_folder = parse_args().input_path
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
-data_processed_folder = os.path.abspath(os.path.join(current_dir, "../../data/preprocessed_subset"))
-
-# added: makes preprosses_subset folder
-os.makedirs(data_processed_folder, exist_ok=True)
+data_processed_folder = os.path.abspath(os.path.join(current_dir, "../../data/preprocessed_mission_2"))
 
 dataset_collection_name = os.path.basename(data_raw_folder)
 source_folder = Path(data_raw_folder)
@@ -60,11 +54,11 @@ target_subfolder = target_folder / dataset_subfolder
 target_subfolder.mkdir(parents=True, exist_ok=True)
 print(f"Created directories {target_subfolder}")
 
-
 def remove_unneeded_data(source_folder):
 
     # added
-    subset_channels = ['channel_41', 'channel_42', 'channel_43', 'channel_44', 'channel_45', 'channel_46']
+    subset_channels = ['channel_18', 'channel_19', 'channel_20', 'channel_21', 'channel_22', 'channel_23', 'channel_24', 'channel_25', 'channel_26', 'channel_27', 'channel_28']
+
 
     # editied
     all_labels_df = pd.read_csv(os.path.join(source_folder, "labels.csv"), parse_dates=["StartTime", "EndTime"], date_parser=lambda x: parse_date(x, ignoretz=True))
@@ -83,7 +77,7 @@ def remove_unneeded_data(source_folder):
     # rewrite the anomaly_types.csv
     subset_anomaly_types_df.to_csv(os.path.join(source_folder, "anomaly_types.csv"), index = False)
 
-    # remove telecommands folder and csv
+    """# remove telecommands folder and csv
     telecommands_csv_path = os.path.join(os.path.join(source_folder, "telecommands.csv"))
 
     if os.path.exists(telecommands_csv_path):
@@ -93,7 +87,7 @@ def remove_unneeded_data(source_folder):
 
     if os.path.exists(telecommands_folder_path):
         shutil.rmtree(telecommands_folder_path)
-
+    """
     # remove channels not in subset
     channels_folder_path = os.path.join(os.path.join(source_folder, "channels"))
 
@@ -104,12 +98,12 @@ def remove_unneeded_data(source_folder):
                 file_path = os.path.join(channels_folder_path, file)
                 os.remove(file_path)
 
-
-def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resampling_rule=pd.Timedelta(seconds=30)):
+def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resampling_rule=pd.Timedelta(seconds=18)):
 
     labels_df = pd.read_csv(os.path.join(source_folder, "labels.csv"), parse_dates=["StartTime", "EndTime"], date_parser=lambda x: parse_date(x, ignoretz=True))
-
     anomaly_types_df = pd.read_csv(os.path.join(source_folder, "anomaly_types.csv"))
+    #telecommands_df = pd.read_csv(os.path.join(source_folder, "telecommands.csv"))
+    #telecommands_min_priority = 3
 
     extension = ".zip"
     all_parameter_names = sorted([
@@ -117,13 +111,15 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
         for file in glob(os.path.join(source_folder, "channels", f"*{extension}"))
     ])
 
+    #telecommands_df = telecommands_df.loc[telecommands_df["Priority"] >= telecommands_min_priority]
+    #all_telecommands_names = sorted(telecommands_df.Telecommand.to_list())
+
     is_anomaly_columns = [f"is_anomaly_{param}" for param in all_parameter_names]
     train_test_paths = {"train": None, "test": None}
 
-
     for train_test_type in train_test_paths.keys():
         if train_test_type == "test":
-            train_test_name = "84_months_test"
+            train_test_name = "21_months_test"
         else:
             train_test_name = dataset_name
 
@@ -134,7 +130,7 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
         target_meta_filepath = target_subfolder / f"{train_test_name}.{Datasets.METADATA_FILENAME_SUFFIX}"
 
         # Prepare datasets
-        if not target_filepath.exists() or not target_meta_filepath.exists():
+        if not target_filepath.exists() and not target_meta_filepath.exists():
             params_dict = {}
 
             for param in tqdm(all_parameter_names):
@@ -144,8 +140,13 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
                 param_df = param_df.rename(columns={param: "value"})
 
                 # Take derivative of monotonic channels - part of preprocessing
-                if 4 <= int(param.split("_")[1]) <= 11:
+                if 29 <= int(param.split("_")[1]) <= 46:
                     param_df.value = np.diff(param_df.value, append=param_df.value[-1])
+
+                # change string values to categorical integers
+                if param_df["value"].dtype == "O":
+                    print(f"{param} is not numeric!")
+                    param_df["value"] = pd.factorize(param_df["value"])[0]
 
                 # Fill labels
                 is_param_annotated = False
@@ -156,8 +157,6 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
                             label_value = AnnotationLabel.ANOMALY.value
                         elif anomaly_type == "Rare Event":
                             label_value = AnnotationLabel.RARE_EVENT.value
-                        else:
-                            label_value = AnnotationLabel.GAP.value
                         param_df.loc[row["StartTime"]:row["EndTime"], "label"] = label_value
                         is_param_annotated = True
 
@@ -166,6 +165,10 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
                         param_df = param_df[param_df.index <= parse_date(split_at)].copy()
                     else:
                         param_df = param_df[param_df.index > parse_date(test_data_split)].copy()
+
+                if len(param_df) == 0:
+                    params_dict[param] = []
+                    continue
 
                 # Resample using zero order hold
                 first_index_resampled = pd.Timestamp(param_df.index[0]).floor(freq=resampling_rule)
@@ -183,7 +186,7 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
                         org_elements = param_df.iloc[group]
                         if org_elements.label.values[-1] != AnnotationLabel.NOMINAL.value:
                             continue
-                        is_annotated = (org_elements.label == AnnotationLabel.ANOMALY.value) | (org_elements.label == AnnotationLabel.RARE_EVENT.value) # do not restore communication gaps
+                        is_annotated = (org_elements.label > 0)
                         if is_annotated.any():
                             print(timestamp, org_elements[is_annotated].iloc[-1])
                             params_dict[param].loc[timestamp + pd.Timedelta(resampling_rule)] = org_elements[is_annotated].iloc[-1]
@@ -191,7 +194,7 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
             """for param in tqdm(all_telecommands_names):
                 print(param)
                 param_df = pd.read_pickle(os.path.join(source_folder, "telecommands", f"{param}{extension}"))
-                param_df["label"] = np.uint8(0)
+                param_df["label"] = 0
                 param_df = param_df.rename(columns={param: "value"})
 
                 param_df.index = pd.to_datetime(param_df.index)
@@ -229,7 +232,7 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
                     continue
                 df = df.rename(columns={"value": param, "label": f"is_anomaly_{param}"})
                 data_df[df.columns] = df.reindex(data_df.index)
-                data_df[param] = data_df[param].ffill().bfill()
+                data_df[param] = data_df[param].astype(np.float64).ffill().bfill()
                 data_df[f"is_anomaly_{param}"] = data_df[f"is_anomaly_{param}"].ffill().bfill().astype(np.uint8)
 
             new_columns_order = [*all_parameter_names, *is_anomaly_columns]
@@ -247,7 +250,7 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
             def analyze(df_test):
                 da = DatasetAnalyzer((dataset_collection_name, dataset_name), is_train=True,
                                      df=df_test, ignore_stationarity=True, ignore_trend=True)
-                da.save_to_json(target_meta_filepath, overwrite=True)
+                da.save_to_json(target_meta_filepath, overwrite=(train_test_type == "train"))
                 print(f"  analyzed dataset {dataset_name}")
                 return da.metadata
 
@@ -290,7 +293,6 @@ def process_dataset(dm: DatasetManager, dataset_name: str, split_at: str, resamp
     ))
     print(f"... processed source dataset: {dataset_name}")
 
-# added
 remove_unneeded_data(source_folder)
 
 dm = DatasetManager(target_folder, create_if_missing=True)

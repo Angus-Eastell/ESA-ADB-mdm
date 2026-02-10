@@ -1,4 +1,39 @@
-<h1>ESA Anomaly Detection Benchmark</h1>
+<h1>MDM3 Indra Deimos: Anomaly Detection in Satellite Telemtary</h1>
+
+Central Git for the Indra Deimos anomaly detection in satellite telemetrary project. From here you can efficiently preprocesses the ESA-ADB dataset into the subset channels used in the report and navigate to the individual git repositors that contain the models tested in the project. Unfortunately, because of the universities restriction on installing WSL or docker onto lab PC's, we were unable to integrate our models into the full TimeEval-based ESA benchmark. However, all models are evaluated using the same preprocessing and evaluation pipeline to ensure comparibility between models.
+
+## Detection Models:
+
+### - [LFTSAD](https://github.com/bm7273/LFTSAD_ESA_ADB)
+
+### - [Matrix Profiling](https://github.com/RHMaso2/matrix_profile_esa_dataset/tree/main)
+
+### - [Anomaly Transformer](https://github.com/Angus-Eastell/Anomaly-Transformer-ESA-ADB)
+
+
+## Dataset preprocessing:
+
+1. Follow ESA's python environment setup instructions below.
+2. Download raw ESA Anomalies Dataset from the link https://doi.org/10.5281/zenodo.12528696 and put ESA-Mission1 and ESA-Mission2 folders in the "data" folder.
+3. There are separate script to generate preprocessed data for TimeEval framework for each mission. The scripts are located in notebooks\data-prep folder. From the notebooks\data-prep folder run:
+
+**(Warning: Theses scripts will remove the uncessary channels and telecommands from the initial dataset and connected files)**
+
+Mission1: 
+```
+python Mission1_semisupervised_prep_from_raw_subset.py ../../data/ESA-Mission1
+```
+Mission2: 
+```
+python Mission2_semiunsupervised_prep_from_raw_subset.py ../../data/ESA-Mission2
+```
+4. Copy preprocessed datasets and labels.csv into the folders indicated for each model.
+
+## Results Visualisations:
+
+Once the models have been run you can visualise the results using the results_analysis.ipynb in the results folder of this git. To do this simply copy processed test.csv, labels.csv and anomaly_types.csv into the results folder and your model results into the corresponding results folder.
+
+<h1>ESA Anomaly Detection Benchmark (Forked Git)</h1>
 
 The European Space Agency Anomaly Detection Benchmark (ESA-ADB) consists of three main components (visualised in the figure below for easier comprehension):
 1.	Large-scale, curated, structured, ML-ready ESA Anomalies Dataset (ESA-AD, in short) of real-life satellite telemetry collected from three ESA missions (out of which two are selected for benchmarking in ESA-ADB), manually annotated by spacecraft operations engineers (SOEs) and ML experts, and cross-verified using state-of-the-art algorithms. It can be downloaded from here: https://doi.org/10.5281/zenodo.12528696

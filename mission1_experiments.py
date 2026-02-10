@@ -40,12 +40,12 @@ def main():
     test_dataset_path = Path(os.path.join(data_processed_folder, "multivariate", f"{collection}-semi-supervised", "84_months.test.csv"))
 
     algorithms = [
-        # pcc(params=FullParameterGrid({"target_channels": [subset_channels, target_channels]})),
-        #hbos(params=FullParameterGrid({"target_channels": [subset_channels, target_channels], "n_bins": [50]})),
-        #std(params=FullParameterGrid({"target_channels": [subset_channels, target_channels], "tol": [3, 5]})),
+        pcc(params=FullParameterGrid({"target_channels": [subset_channels, target_channels]})),
+        hbos(params=FullParameterGrid({"target_channels": [subset_channels, target_channels], "n_bins": [50]})),
+        std(params=FullParameterGrid({"target_channels": [subset_channels, target_channels], "tol": [3, 5]})),
         iforest(params=FullParameterGrid({"target_channels": [subset_channels, target_channels]})),
-        #subsequence_if(params=FullParameterGrid({"target_channels": [subset_channels, target_channels], "n_trees": [200], "window_size": [17]})),
-        #knn(params=FullParameterGrid({"target_channels": [subset_channels, target_channels]}))
+        subsequence_if(params=FullParameterGrid({"target_channels": [subset_channels, target_channels], "n_trees": [200], "window_size": [17]})),
+        knn(params=FullParameterGrid({"target_channels": [subset_channels, target_channels]}))
     ]
 
     timeeval = TimeEval(dm, datasets, algorithms,
